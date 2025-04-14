@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoCalc - AI-Powered Calculator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.7.0/math.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #00f7ff;
+            --secondary-color: #1a1a2e;
+            --accent-color: #ff00ff;
+            --text-color: #ffffff;
+            --bg-color: #0a0a1a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 100%;
+            padding: 20px;
+            margin: 0 auto;
+            flex: 1;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                text-shadow: 0 0 5px var(--primary-color),
+                           0 0 10px var(--primary-color),
+                           0 0 15px var(--primary-color);
+            }
+            to {
+                text-shadow: 0 0 10px var(--primary-color),
+                           0 0 20px var(--primary-color),
+                           0 0 30px var(--primary-color);
+            }
+        }
+
+        .chat-container {
+            background: rgba(26, 26, 46, 0.8);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            height: 60vh;
+            overflow-y: auto;
+            border: 1px solid var(--primary-color);
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.2);
+            /* Hide scrollbar for Chrome, Safari and Opera */
+            &::-webkit-scrollbar {
+                display: none;
+            }
+            /* Hide scrollbar for IE, Edge and Firefox */
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 80%;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user-message {
+            background: rgba(0, 247, 255, 0.1);
+            border: 1px solid var(--primary-color);
+            margin-left: auto;
+        }
+
+        .bot-message {
+            background: rgba(255, 0, 255, 0.1);
+            border: 1px solid var(--accent-color);
+        }
+
+        .input-container {
+            position: relative;
+            margin-top: 20px;
+        }
+
+        .input-box {
+            width: 100%;
+            padding: 15px;
+            background: rgba(26, 26, 46, 0.8);
+            border: 1px solid var(--primary-color);
+            border-radius: 15px;
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-box:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.3);
+        }
+
+        .send-button {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--primary-color);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: var(--secondary-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .send-button:hover {
+            transform: translateY(-50%) scale(1.1);
+            box-shadow: 0 0 15px var(--primary-color);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: rgba(26, 26, 46, 0.8);
+            border-top: 1px solid var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .typing-indicator {
+            display: none;
+            margin: 10px 0;
+            padding: 10px 15px;
+            background: rgba(255, 0, 255, 0.1);
+            border: 1px solid var(--accent-color);
+            border-radius: 15px;
+            width: fit-content;
+        }
+
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: typing 1s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .chat-container {
+                height: 50vh;
+            }
+            
+            .message {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>NeoCalc</h1>
+            <p>Your Futuristic Math Assistant</p>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="message bot-message">
+                Hello! I'm NeoCalc, your futuristic math assistant. You can ask me anything from basic arithmetic to advanced calculus. Try asking something like "What is the derivative of x^2?" or "Solve 3x + 2 = 11"
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <div class="input-container">
+            <input type="text" class="input-box" id="userInput" placeholder="Ask me anything..." autocomplete="off">
+            <button class="send-button" id="sendButton">→</button>
+        </div>
+    </div>
+
+    <footer class="footer">
+        Developed by Quonain Ejaz
+    </footer>
+
+    <script>
+        const chatContainer = document.getElementById('chatContainer');
+        const userInput = document.getElementById('userInput');
+        const sendButton = document.getElementById('sendButton');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        // Calculator context
+        const calculatorContext = {
+            name: "NeoCalc",
+            previousQueries: [],
+            learningPatterns: {},
+            synonyms: {},
+            customExpressions: {}
+        };
+
+        // AI Learning System
+        class AILearningSystem {
+            constructor() {
+                this.patterns = {};
+                this.queryHistory = [];
+                this.maxHistorySize = 100;
+                this.learningThreshold = 2;
+                
+                // Load saved patterns from localStorage if available
+                this.loadPatterns();
+            }
+
+            loadPatterns() {
+                const savedPatterns = localStorage.getItem('calculatorPatterns');
+                if (savedPatterns) {
+                    this.patterns = JSON.parse(savedPatterns);
+                }
+            }
+
+            savePatterns() {
+                localStorage.setItem('calculatorPatterns', JSON.stringify(this.patterns));
+            }
+
+            learnFromQuery(input, processedQuery, result, success) {
+                // Store the query in history
+                this.queryHistory.push({
+                    input: input,
+                    processed: processedQuery,
+                    result: result,
+                    success: success,
+                    timestamp: Date.now()
+                });
+
+                // Trim history if it gets too long
+                if (this.queryHistory.length > this.maxHistorySize) {
+                    this.queryHistory.shift();
+                }
+
+                if (success) {
+                    // Learn from successful queries
+                    const pattern = this.extractPattern(input, processedQuery);
+                    if (pattern) {
+                        if (!this.patterns[pattern.key]) {
+                            this.patterns[pattern.key] = {
+                                count: 0,
+                                transformations: {}
+                            };
+                        }
+                        
+                        this.patterns[pattern.key].count++;
+                        if (!this.patterns[pattern.key].transformations[pattern.transformation]) {
+                            this.patterns[pattern.key].transformations[pattern.transformation] = 1;
+                        } else {
+                            this.patterns[pattern.key].transformations[pattern.transformation]++;
+                        }
+
+                        // Save patterns to localStorage
+                        this.savePatterns();
+                    }
+                }
+            }
+
+            extractPattern(input, processed) {
+                // Remove specific numbers and variables
+                const genericInput = input.toLowerCase()
+                    .replace(/\d+/g, 'N')
+                    .replace(/\b[xyz]\b/g, 'VAR');
+                const genericProcessed = processed
+                    .replace(/\d+/g, 'N')
+                    .replace(/\b[xyz]\b/g, 'VAR');
+
+                if (genericInput !== genericProcessed) {
+                    return {
+                        key: genericInput,
+                        transformation: genericProcessed
+                    };
+                }
+                return null;
+            }
+
+            suggestTransformation(input) {
+                const genericInput = input.toLowerCase()
+                    .replace(/\d+/g, 'N')
+                    .replace(/\b[xyz]\b/g, 'VAR');
+
+                if (this.patterns[genericInput]) {
+                    const transformations = this.patterns[genericInput].transformations;
+                    // Find the most common transformation
+                    let bestTransformation = null;
+                    let maxCount = 0;
+                    
+                    for (const [transform, count] of Object.entries(transformations)) {
+                        if (count > maxCount) {
+                            maxCount = count;
+                            bestTransformation = transform;
+                        }
+                    }
+
+                    if (bestTransformation) {
+                        // Replace placeholders with actual values
+                        let numbers = input.match(/\d+/g) || [];
+                        let vars = input.match(/\b[xyz]\b/g) || [];
+                        let result = bestTransformation;
+                        
+                        numbers.forEach(num => {
+                            result = result.replace('N', num);
+                        });
+                        vars.forEach(variable => {
+                            result = result.replace('VAR', variable);
+                        });
+                        
+                        return result;
+                    }
+                }
+                return null;
+            }
+
+            analyzePatterns() {
+                // Analyze recent queries for patterns
+                const recentQueries = this.queryHistory.slice(-20);
+                const patterns = {};
+
+                recentQueries.forEach(query => {
+                    if (query.success) {
+                        const words = query.input.toLowerCase().split(' ');
+                        words.forEach((word, index) => {
+                            if (!patterns[word]) {
+                                patterns[word] = { count: 0, nextWords: {} };
+                            }
+                            patterns[word].count++;
+                            if (words[index + 1]) {
+                                if (!patterns[word].nextWords[words[index + 1]]) {
+                                    patterns[word].nextWords[words[index + 1]] = 0;
+                                }
+                                patterns[word].nextWords[words[index + 1]]++;
+                            }
+                        });
+                    }
+                });
+
+                return patterns;
+            }
+        }
+
+        // Initialize AI Learning System
+        const aiLearning = new AILearningSystem();
+
+        function processNaturalLanguage(query) {
+            // First check if AI has learned a better transformation
+            const learnedTransformation = aiLearning.suggestTransformation(query);
+            if (learnedTransformation) {
+                console.log('Using learned transformation:', learnedTransformation);
+                query = learnedTransformation;
+            }
+
+            // Convert query to lowercase for easier processing
+            query = query.toLowerCase().trim();
+            
+            // Remove question marks and other punctuation but keep decimal points
+            query = query.replace(/[?,!]/g, '');
+
+            // Common question patterns
+            const questionPatterns = {
+                'what is the result of': '',
+                'what is the answer to': '',
+                'what do you get when you': '',
+                'what happens if i': '',
+                'can you tell me': '',
+                'could you calculate': '',
+                'please calculate': '',
+                'help me solve': '',
+                'i need to know': '',
+                'find the value of': '',
+                'compute the': '',
+                'evaluate': '',
+                'what is': '',
+                'whats': '',
+                'calculate': '',
+                'solve': '',
+                'find': ''
+            };
+
+            // Replace question patterns
+            for (let pattern in questionPatterns) {
+                query = query.replace(new RegExp(pattern, 'g'), questionPatterns[pattern]);
+            }
+
+            // Mathematical operations in natural language
+            const mathOperations = {
+                'plus': '+',
+                'minus': '-',
+                'negative': '-',
+                'times': '*',
+                'multiplied by': '*',
+                'multiply with': '*',
+                'multiply by': '*',
+                'divided by': '/',
+                'divide by': '/',
+                'over': '/',
+                'to the power of': '^',
+                'to the power': '^',
+                'raised to': '^',
+                'power': '^',
+                'squared': '^2',
+                'cubed': '^3',
+                'square root of': 'sqrt(',
+                'cube root of': 'cbrt(',
+                'root of': 'sqrt(',
+                'derivative of': 'derivative',
+                'derive': 'derivative',
+                'integral of': 'integral',
+                'integrate': 'integral',
+                'logarithm of': 'log',
+                'log of': 'log',
+                'natural log of': 'ln',
+                'ln of': 'ln',
+                'sine of': 'sin',
+                'sin of': 'sin',
+                'cosine of': 'cos',
+                'cos of': 'cos',
+                'tangent of': 'tan',
+                'tan of': 'tan',
+                'arcsin of': 'asin',
+                'arccos of': 'acos',
+                'arctan of': 'atan',
+                'inverse sine of': 'asin',
+                'inverse cosine of': 'acos',
+                'inverse tangent of': 'atan',
+                'factorial of': 'factorial',
+                'absolute value of': 'abs',
+                'absolute of': 'abs',
+                'determinant of': 'det',
+                'det of': 'det',
+                'transpose of': 'transpose',
+                'inverse of': 'inv'
+            };
+
+            // Replace math operations
+            for (let operation in mathOperations) {
+                query = query.replace(new RegExp(operation, 'g'), mathOperations[operation]);
+            }
+
+            // Convert words to numbers and mathematical constants
+            const numberWords = {
+                'zero': '0', 'one': '1', 'two': '2', 'three': '3', 'four': '4',
+                'five': '5', 'six': '6', 'seven': '7', 'eight': '8', 'nine': '9',
+                'ten': '10', 'eleven': '11', 'twelve': '12', 'thirteen': '13',
+                'fourteen': '14', 'fifteen': '15', 'sixteen': '16', 'seventeen': '17',
+                'eighteen': '18', 'nineteen': '19', 'twenty': '20',
+                'thirty': '30', 'forty': '40', 'fifty': '50',
+                'sixty': '60', 'seventy': '70', 'eighty': '80', 'ninety': '90',
+                'hundred': '100', 'thousand': '1000', 'million': '1000000',
+                'pi': 'pi', 'pie': 'pi', 'π': 'pi',
+                'e': 'e', 'euler': 'e',
+                'infinity': 'Infinity', 'infinite': 'Infinity'
+            };
+
+            // Handle compound numbers (like twenty-five)
+            query = query.replace(/twenty[\s-]five/g, '25')
+                       .replace(/thirty[\s-]five/g, '35')
+                       .replace(/forty[\s-]five/g, '45')
+                       .replace(/fifty[\s-]five/g, '55')
+                       .replace(/sixty[\s-]five/g, '65')
+                       .replace(/seventy[\s-]five/g, '75')
+                       .replace(/eighty[\s-]five/g, '85')
+                       .replace(/ninety[\s-]five/g, '95');
+
+            // Convert number words to digits
+            for (let word in numberWords) {
+                query = query.replace(new RegExp('\\b' + word + '\\b', 'g'), numberWords[word]);
+            }
+
+            // Handle special cases
+            query = query
+                .replace(/\bx\b/g, 'x')  // Preserve variable x
+                .replace(/\by\b/g, 'y')  // Preserve variable y
+                .replace(/equals/g, '=')
+                .replace(/equal to/g, '=')
+                .replace(/same as/g, '=')
+                .replace(/\bis\b/g, '=')
+                .replace(/\sequals\s/g, ' = ')
+                .replace(/\sis\s/g, ' = ')
+                .replace(/\splus\s/g, ' + ')
+                .replace(/\sminus\s/g, ' - ')
+                .replace(/\stimes\s/g, ' * ')
+                .replace(/\sdivided\sby\s/g, ' / ')
+                .replace(/\sover\s/g, ' / ')
+                .replace(/\sto\sthe\spower\sof\s/g, ' ^ ');
+
+            // Clean up any extra spaces
+            query = query.replace(/\s+/g, ' ').trim();
+
+            // Add missing parentheses for functions
+            if (query.includes('sqrt') && !query.includes('sqrt(')) {
+                query = query.replace('sqrt', 'sqrt(') + ')';
+            }
+            if (query.includes('cbrt') && !query.includes('cbrt(')) {
+                query = query.replace('cbrt', 'cbrt(') + ')';
+            }
+
+            return query.trim();
+        }
+
+        function processMathQuery(query) {
+            try {
+                const originalQuery = query;
+                const processedQuery = processNaturalLanguage(query);
+                let result;
+
+                try {
+                    // Store the query for context
+                    calculatorContext.previousQueries.push(query);
+                    if (calculatorContext.previousQueries.length > 5) {
+                        calculatorContext.previousQueries.shift();
+                    }
+
+                    // Process natural language
+                    console.log('Processed query:', processedQuery); // For debugging
+
+                    // Handle different types of calculations
+                    if (processedQuery.includes('derivative')) {
+                        const expr = processedQuery.replace('derivative', '').trim();
+                        const result = math.derivative(expr, 'x').toString();
+                        return `The derivative of ${expr} is ${result}`;
+                    }
+
+                    // Handle integral calculations
+                    if (processedQuery.includes('integral')) {
+                        const expr = processedQuery.replace('integral', '').trim();
+                        try {
+                            // Note: This is a basic implementation. For definite integrals,
+                            // you would need to parse bounds and use numerical integration
+                            const result = math.integrate(expr, 'x').toString();
+                            return `The integral of ${expr} is ${result} + C`;
+                        } catch (e) {
+                            return `I can only handle basic integrals. This one is too complex.`;
+                        }
+                    }
+
+                    // Handle matrix operations
+                    if (processedQuery.includes('det') || processedQuery.includes('determinant')) {
+                        const matrixStr = processedQuery.replace(/(det|determinant)/g, '').trim();
+                        const matrix = math.evaluate(matrixStr);
+                        const result = math.det(matrix);
+                        return `The determinant is ${result}`;
+                    }
+
+                    if (processedQuery.includes('transpose')) {
+                        const matrixStr = processedQuery.replace('transpose', '').trim();
+                        const matrix = math.evaluate(matrixStr);
+                        const result = math.transpose(matrix);
+                        return `The transpose is ${math.format(result)}`;
+                    }
+
+                    if (processedQuery.includes('inverse')) {
+                        const matrixStr = processedQuery.replace('inverse', '').trim();
+                        const matrix = math.evaluate(matrixStr);
+                        const result = math.inv(matrix);
+                        return `The inverse is ${math.format(result)}`;
+                    }
+
+                    // Handle complex numbers
+                    if (processedQuery.includes('i') || processedQuery.includes('sqrt(-1)')) {
+                        const result = math.evaluate(processedQuery);
+                        return `${math.format(result, { notation: 'fixed', precision: 4 })}`;
+                    }
+
+                    // Handle equations with x
+                    if (processedQuery.includes('=')) {
+                        const [left, right] = processedQuery.split('=').map(s => s.trim());
+                        const solution = math.solve(left + '-(' + right + ')', 'x');
+                        return `The solution is x = ${solution}`;
+                    }
+
+                    // Handle special functions
+                    if (processedQuery.includes('factorial')) {
+                        const num = processedQuery.replace('factorial', '').trim();
+                        const result = math.factorial(math.evaluate(num));
+                        return `The factorial is ${result}`;
+                    }
+
+                    // Handle logarithms and advanced functions
+                    if (processedQuery.includes('log') || processedQuery.includes('ln')) {
+                        const result = math.evaluate(processedQuery);
+                        return `${result}`;
+                    }
+
+                    // Handle trigonometric functions
+                    if (/^(sin|cos|tan|asin|acos|atan|sec|csc|cot)/i.test(processedQuery)) {
+                        const result = math.evaluate(processedQuery);
+                        return `${math.format(result, { notation: 'fixed', precision: 4 })}`;
+                    }
+
+                    // Handle basic arithmetic and other expressions
+                    result = math.evaluate(processedQuery);
+                    if (typeof result === 'number') {
+                        return `${math.format(result, { notation: 'auto', precision: 14 })}`;
+                    } else {
+                        return `${math.format(result)}`;
+                    }
+
+                    // Learn from successful query
+                    aiLearning.learnFromQuery(originalQuery, processedQuery, result, true);
+                    
+                    return formatResult(result);
+                } catch (error) {
+                    // Learn from failed query
+                    aiLearning.learnFromQuery(originalQuery, processedQuery, null, false);
+                    throw error;
+                }
+            } catch (error) {
+                console.error('Processing error:', error);
+                
+                // Analyze patterns to provide better suggestions
+                const patterns = aiLearning.analyzePatterns();
+                const suggestions = generateSuggestions(patterns);
+                
+                return `I couldn't understand that. Here are some suggestions based on successful queries:
+${suggestions.map(s => '- ' + s).join('\n')}`;
+            }
+        }
+
+        function generateSuggestions(patterns) {
+            const suggestions = [];
+            const commonPatterns = Object.entries(patterns)
+                .sort((a, b) => b[1].count - a[1].count)
+                .slice(0, 5);
+
+            commonPatterns.forEach(([word, data]) => {
+                const nextWord = Object.entries(data.nextWords)
+                    .sort((a, b) => b[1] - a[1])[0];
+                if (nextWord) {
+                    suggestions.push(`${word} ${nextWord[0]}...`);
+                }
+            });
+
+            return suggestions;
+        }
+
+        function formatResult(result) {
+            if (typeof result === 'number') {
+                return math.format(result, { notation: 'auto', precision: 14 });
+            } else {
+                return math.format(result);
+            }
+        }
+
+        async function handleUserInput() {
+            const query = userInput.value.trim();
+            if (!query) return;
+
+            addMessage(query, true);
+            userInput.value = '';
+
+            showTypingIndicator();
+            
+            // Add a small delay to simulate processing
+            setTimeout(() => {
+                try {
+                    const response = processMathQuery(query);
+                    hideTypingIndicator();
+                    addMessage(response);
+                } catch (error) {
+                    hideTypingIndicator();
+                    addMessage("I couldn't process that calculation. Please try again.");
+                }
+            }, 500);
+        }
+
+        function addMessage(message, isUser = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+            messageDiv.textContent = message;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            typingIndicator.style.display = 'block';
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function hideTypingIndicator() {
+            typingIndicator.style.display = 'none';
+        }
+
+        sendButton.addEventListener('click', handleUserInput);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleUserInput();
+            }
+        });
+    </script>
+</body>
+</html> 
