@@ -188,6 +188,58 @@
                 max-width: 90%;
             }
         }
+
+        .button-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+            padding: 10px;
+        }
+
+        .calc-button {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .calc-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+
+        .function-button {
+            background: rgba(0, 123, 255, 0.2);
+        }
+
+        .clear-button {
+            background: rgba(255, 0, 0, 0.2);
+        }
+
+        .advanced-keyboard {
+            display: none;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+        }
+
+        .advanced-keyboard.show {
+            display: grid;
+        }
+
+        .toggle-advanced {
+            grid-column: span 4;
+            background: rgba(0, 123, 255, 0.3);
+        }
     </style>
 </head>
 <body>
@@ -534,6 +586,10 @@
                 query = query.replace('cbrt', 'cbrt(') + ')';
             }
 
+            // Add recognition for new functions
+            query = query.replace(/\b(hcf|lcm)\s+of\s+(\d+)\s+and\s+(\d+)/g, '$1($2,$3)');
+            query = query.replace(/\b(factorial|!)\s+of\s+(\d+)/g, 'factorial($2)');
+
             return query.trim();
         }
 
@@ -627,12 +683,15 @@
                         return `${math.format(result, { notation: 'fixed', precision: 4 })}`;
                     }
 
-                    // Handle basic arithmetic and other expressions
-                    result = math.evaluate(processedQuery);
-                    if (typeof result === 'number') {
-                        return `${math.format(result, { notation: 'auto', precision: 14 })}`;
+                    // Handle special cases for HCF and LCM
+                    if (processedQuery.includes('hcf(')) {
+                        const numbers = processedQuery.match(/\d+/g).map(Number);
+                        result = numbers.reduce(hcf);
+                    } else if (processedQuery.includes('lcm(')) {
+                        const numbers = processedQuery.match(/\d+/g).map(Number);
+                        result = numbers.reduce(lcm);
                     } else {
-                        return `${math.format(result)}`;
+                        result = math.evaluate(processedQuery);
                     }
 
                     // Learn from successful query
@@ -726,6 +785,38 @@ ${suggestions.map(s => '- ' + s).join('\n')}`;
                 handleUserInput();
             }
         });
+
+        // Add new functions for HCF and LCM
+        function hcf(a, b) {
+            return b === 0 ? a : hcf(b, a % b);
+        }
+
+        function lcm(a, b) {
+            return (a * b) / hcf(a, b);
+        }
+
+        // Extend math.js with new functions
+        math.import({
+            hcf: hcf,
+            lcm: lcm
+        });
+
+        function appendToQuery(value) {
+            const queryDisplay = document.querySelector('.query-display');
+            queryDisplay.textContent += value;
+        }
+
+        function clearDisplay() {
+            const queryDisplay = document.querySelector('.query-display');
+            const resultDisplay = document.querySelector('.result-display');
+            queryDisplay.textContent = '';
+            resultDisplay.textContent = '';
+        }
+
+        function toggleAdvancedKeyboard() {
+            const advancedKeyboard = document.getElementById('advancedKeyboard');
+            advancedKeyboard.classList.toggle('show');
+        }
     </script>
 </body>
 </html> 
