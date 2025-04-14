@@ -240,6 +240,85 @@
             grid-column: span 4;
             background: rgba(0, 123, 255, 0.3);
         }
+
+        .history-panel {
+            position: absolute;
+            right: -300px;
+            top: 0;
+            width: 280px;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .history-panel.show {
+            right: 0;
+        }
+
+        .history-item {
+            padding: 10px;
+            margin-bottom: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .theme-selector {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .theme-button {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid white;
+        }
+
+        .quick-calc-menu {
+            position: absolute;
+            top: 60px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .quick-calc-menu.show {
+            display: block;
+        }
+
+        .quick-calc-item {
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .quick-calc-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .memory-buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .memory-button {
+            padding: 8px;
+            background: rgba(0, 123, 255, 0.2);
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -270,6 +349,42 @@
     <footer class="footer">
         Developed by Quonain Ejaz
     </footer>
+
+    <div class="calculator-container">
+        <div class="theme-selector">
+            <div class="theme-button" style="background: #1a1a1a" onclick="setTheme('dark')"></div>
+            <div class="theme-button" style="background: #f0f0f0" onclick="setTheme('light')"></div>
+            <div class="theme-button" style="background: #2d1b3b" onclick="setTheme('purple')"></div>
+        </div>
+        <div class="quick-calc-menu" id="quickCalcMenu">
+            <div class="quick-calc-item" onclick="quickCalculate('area-circle')">Area of Circle</div>
+            <div class="quick-calc-item" onclick="quickCalculate('volume-sphere')">Volume of Sphere</div>
+            <div class="quick-calc-item" onclick="quickCalculate('pythagoras')">Pythagoras Theorem</div>
+            <div class="quick-calc-item" onclick="quickCalculate('quadratic')">Quadratic Formula</div>
+        </div>
+        <div class="calculator">
+            <div class="display">
+                <div class="query-display"></div>
+                <div class="result-display"></div>
+                <div class="memory-buttons">
+                    <div class="memory-button" onclick="memoryRecall()">MR</div>
+                    <div class="memory-button" onclick="memoryClear()">MC</div>
+                    <div class="memory-button" onclick="memoryAdd()">M+</div>
+                    <div class="memory-button" onclick="memorySubtract()">M-</div>
+                </div>
+            </div>
+            <div class="button-container">
+                <div class="calc-button function-button" onclick="toggleHistory()">History</div>
+                <div class="calc-button function-button" onclick="toggleQuickCalc()">Quick Calc</div>
+                <div class="calc-button function-button" onclick="convertUnits()">Convert</div>
+                <div class="calc-button function-button" onclick="toggleScientificNotation()">Sci</div>
+            </div>
+        </div>
+        <div class="history-panel" id="historyPanel">
+            <h3>Calculation History</h3>
+            <div id="historyList"></div>
+        </div>
+    </div>
 
     <script>
         const chatContainer = document.getElementById('chatContainer');
@@ -816,6 +931,154 @@ ${suggestions.map(s => '- ' + s).join('\n')}`;
         function toggleAdvancedKeyboard() {
             const advancedKeyboard = document.getElementById('advancedKeyboard');
             advancedKeyboard.classList.toggle('show');
+        }
+
+        // Add new functionality
+        let calculationHistory = [];
+        let memoryValue = 0;
+        let isScientificNotation = false;
+
+        function toggleHistory() {
+            const historyPanel = document.getElementById('historyPanel');
+            historyPanel.classList.toggle('show');
+        }
+
+        function toggleQuickCalc() {
+            const quickCalcMenu = document.getElementById('quickCalcMenu');
+            quickCalcMenu.classList.toggle('show');
+        }
+
+        function addToHistory(query, result) {
+            calculationHistory.unshift({
+                query: query,
+                result: result,
+                timestamp: new Date().toLocaleTimeString()
+            });
+            
+            // Keep only last 50 calculations
+            if (calculationHistory.length > 50) {
+                calculationHistory.pop();
+            }
+            
+            updateHistoryDisplay();
+        }
+
+        function updateHistoryDisplay() {
+            const historyList = document.getElementById('historyList');
+            historyList.innerHTML = calculationHistory.map(item => `
+                <div class="history-item" onclick="useHistoryItem('${item.query}')">
+                    <div>${item.query}</div>
+                    <div>= ${item.result}</div>
+                    <small>${item.timestamp}</small>
+                </div>
+            `).join('');
+        }
+
+        function useHistoryItem(query) {
+            document.querySelector('.query-display').textContent = query;
+        }
+
+        // Memory functions
+        function memoryRecall() {
+            appendToQuery(memoryValue);
+        }
+
+        function memoryClear() {
+            memoryValue = 0;
+        }
+
+        function memoryAdd() {
+            const currentValue = parseFloat(document.querySelector('.result-display').textContent) || 0;
+            memoryValue += currentValue;
+        }
+
+        function memorySubtract() {
+            const currentValue = parseFloat(document.querySelector('.result-display').textContent) || 0;
+            memoryValue -= currentValue;
+        }
+
+        // Quick calculations
+        function quickCalculate(type) {
+            let query = '';
+            switch(type) {
+                case 'area-circle':
+                    query = 'pi * r^2';
+                    break;
+                case 'volume-sphere':
+                    query = '(4/3) * pi * r^3';
+                    break;
+                case 'pythagoras':
+                    query = 'sqrt(a^2 + b^2)';
+                    break;
+                case 'quadratic':
+                    query = '(-b ± sqrt(b^2 - 4*a*c)) / (2*a)';
+                    break;
+            }
+            document.querySelector('.query-display').textContent = query;
+        }
+
+        // Unit conversion
+        function convertUnits() {
+            const currentValue = parseFloat(document.querySelector('.result-display').textContent) || 0;
+            const conversions = {
+                length: {
+                    'm to km': currentValue / 1000,
+                    'km to m': currentValue * 1000,
+                    'm to cm': currentValue * 100,
+                    'cm to m': currentValue / 100
+                },
+                weight: {
+                    'kg to g': currentValue * 1000,
+                    'g to kg': currentValue / 1000,
+                    'kg to lb': currentValue * 2.20462,
+                    'lb to kg': currentValue / 2.20462
+                },
+                temperature: {
+                    'C to F': (currentValue * 9/5) + 32,
+                    'F to C': (currentValue - 32) * 5/9,
+                    'C to K': currentValue + 273.15,
+                    'K to C': currentValue - 273.15
+                }
+            };
+
+            let result = 'Unit Conversions:\n';
+            for (const [category, values] of Object.entries(conversions)) {
+                result += `\n${category}:\n`;
+                for (const [conversion, value] of Object.entries(values)) {
+                    result += `${conversion}: ${value.toFixed(2)}\n`;
+                }
+            }
+            
+            document.querySelector('.result-display').textContent = result;
+        }
+
+        // Scientific notation toggle
+        function toggleScientificNotation() {
+            isScientificNotation = !isScientificNotation;
+            const result = document.querySelector('.result-display').textContent;
+            if (result && !isNaN(result)) {
+                document.querySelector('.result-display').textContent = 
+                    isScientificNotation ? Number(result).toExponential() : Number(result).toString();
+            }
+        }
+
+        // Theme customization
+        function setTheme(theme) {
+            const root = document.documentElement;
+            switch(theme) {
+                case 'dark':
+                    root.style.setProperty('--bg-color', '#1a1a1a');
+                    root.style.setProperty('--text-color', '#ffffff');
+                    break;
+                case 'light':
+                    root.style.setProperty('--bg-color', '#f0f0f0');
+                    root.style.setProperty('--text-color', '#000000');
+                    break;
+                case 'purple':
+                    root.style.setProperty('--bg-color', '#2d1b3b');
+                    root.style.setProperty('--text-color', '#ffffff');
+                    break;
+            }
         }
     </script>
 </body>
