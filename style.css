@@ -1,0 +1,703 @@
+:root {
+    --bg-color: #f0f2f5;
+    --calc-bg: #ffffff;
+    --display-color: #1a1a1a;
+    --secondary-text: #666;
+    --btn-bg: #f7f8fb;
+    --btn-text: #333;
+    --btn-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    --btn-active-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+    --accent-color: #4facfe;
+    --accent-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --op-color: #ff9a9e;
+    --op-gradient: linear-gradient(120deg, #f6d365 0%, #fda085 100%); /* Orange-ish for ops */
+    --op-text: #333;
+    --equals-gradient: linear-gradient(120deg, #84fab0 0%, #8fd3f4 100%);
+    --fn-bg: #e0e5ec;
+    --fn-text: #333;
+    
+    /* Scrollbar Variables */
+    --scrollbar-track: #e0e5ec;
+    --scrollbar-thumb: #bcc5d1;
+    --scrollbar-thumb-hover: #9fa8b5;
+}
+
+[data-theme="dark"] {
+    --bg-color: #121212;
+    --calc-bg: #1e1e1e;
+    --display-color: #ffffff;
+    --secondary-text: #aaaaaa;
+    --btn-bg: #2d2d2d;
+    --btn-text: #ffffff;
+    --btn-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    --btn-active-shadow: inset 0 2px 4px rgba(0,0,0,0.5);
+    --accent-color: #00f2fe;
+    --fn-bg: #383838;
+    --fn-text: #e0e0e0;
+
+    /* Scrollbar Variables Dark */
+    --scrollbar-track: #2d2d2d;
+    --scrollbar-thumb: #4a4a4a;
+    --scrollbar-thumb-hover: #606060;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 10px; /* Slightly wider for better touch */
+    height: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent; /* Cleaner look */
+    margin: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 10px; /* Full pill shape */
+    border: 2px solid var(--calc-bg); /* Creates padding effect */
+    transition: background 0.3s, transform 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+/* Firefox Scrollbar Support */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    background-color: var(--bg-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    transition: background-color 0.3s ease;
+}
+
+.calculator {
+    width: 100%;
+    max-width: 400px;
+    background-color: var(--calc-bg);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    /* overflow: hidden; Removed to allow better handling, or use hidden but ensure internal scroll if needed */
+    overflow: hidden; 
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    max-height: 900px;
+    transition: all 0.3s ease;
+}
+
+.main-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    overflow: hidden; /* Ensure layout stays contained */
+}
+
+/* Allow keypad to shrink/grow or scroll if absolutely necessary */
+.keypad {
+    flex: 1;
+    min-height: 0; /* Crucial for flex containers to shrink */
+    overflow-y: auto; /* Allow scrolling if screen is too small */
+}
+
+@media (min-width: 450px) {
+    .calculator {
+        height: 90vh;
+        margin: 20px;
+        border: 1px solid rgba(255,255,255,0.1);
+    }
+}
+
+/* Desktop & Tablet Layout */
+@media (min-width: 768px) {
+    .calculator {
+        max-width: 95vw; /* Consume full width */
+        flex-direction: row; /* Side-by-side */
+        height: 85vh;
+        max-height: none;
+    }
+
+    .main-layout {
+        flex: 2; /* Main calc takes more space */
+        min-width: 0; /* Fix flex overflow */
+    }
+
+    /* Keep panels on the right */
+    .history-panel, .tools-panel {
+        position: relative; /* Static flow */
+        width: 350px;
+        transform: none; /* Always visible if we want, but let's keep toggle behavior or fix it */
+        border-left: 1px solid rgba(128,128,128,0.1);
+        height: 100%;
+        background: var(--calc-bg);
+        z-index: 1;
+        /* Initially hidden or collapsed? Let's make History visible by default on large screens */
+        display: none; 
+    }
+
+    /* We need to override the toggle logic or CSS to show history by default */
+    #history-panel.open, #tools-panel.open {
+        display: flex;
+        transform: none;
+    }
+    
+    /* Make History panel visible by default on desktop if no other panel is open */
+    /* This requires JS adjustment or clever CSS. Let's stick to toggle for now but sidebar style */
+    
+    .history-panel.open {
+        transform: translateX(0); /* Ensure it's visible */
+        display: flex;
+    }
+
+    /* Scientific Keys always visible on large screens? */
+    .scientific-keys {
+        display: grid !important; /* Force show */
+        grid-template-columns: repeat(4, 1fr);
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(128,128,128,0.1);
+        margin-bottom: 12px;
+    }
+    
+    /* Hide Sci Toggle button on desktop since it's always open */
+    #sci-toggle {
+        display: none;
+    }
+
+    .keypad {
+        /* On desktop, we can make the keypad split: Sci Left, Standard Right */
+        display: grid;
+        grid-template-columns: 1fr 1.2fr; /* Sci | Standard */
+        gap: 20px;
+        padding: 30px;
+        align-content: center;
+    }
+
+    .scientific-keys {
+        grid-column: 1;
+        border-bottom: none;
+        margin-bottom: 0;
+        padding-bottom: 0;
+        border-right: 1px solid rgba(128,128,128,0.1);
+        padding-right: 20px;
+        align-content: center;
+    }
+
+    /* Standard keys need to be wrapped or selected */
+    /* Since standard keys are direct children of .keypad, they will flow into grid cells if not wrapped. */
+    /* We didn't wrap standard keys in HTML, so they are siblings to .scientific-keys. */
+    /* This creates a mess if we try to use parent grid. */
+    /* Let's wrap standard keys in HTML first for cleaner layout, OR use subgrid/areas. */
+    /* Easier: Wrap standard keys in HTML. But I already edited HTML. */
+    /* Let's re-edit HTML to wrap standard keys. */
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    color: var(--display-color);
+}
+
+.brand {
+    font-size: 1.2rem;
+    font-weight: 600;
+    background: var(--accent-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.developer {
+    font-size: 0.75rem;
+    color: var(--secondary-text);
+    margin-top: -2px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    color: var(--display-color);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    transition: background 0.3s;
+}
+
+.icon-btn:hover {
+    background: rgba(128,128,128,0.1);
+}
+
+.text-icon-btn {
+    font-size: 1rem;
+    font-weight: 600;
+    width: auto;
+    border-radius: 12px;
+    padding: 8px 12px;
+    background: rgba(128,128,128,0.1);
+}
+
+.text-icon-btn.active {
+    background: var(--accent-gradient);
+    color: white;
+}
+
+/* Scientific Keys Collapsible */
+.scientific-keys {
+    grid-column: 1 / -1;
+    display: none; /* Hidden by default */
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+}
+
+.scientific-keys.show {
+    display: grid;
+}
+
+/* Tools Panel Styles */
+.tools-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 15px;
+    padding-bottom: 30px;
+}
+
+.tool-item {
+    background: var(--btn-bg);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: var(--btn-shadow);
+    transform: translateY(20px);
+    opacity: 0;
+    animation: slideUpFade 0.5s ease forwards;
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 1px solid rgba(128,128,128,0.05);
+}
+
+.tool-item:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--btn-active-shadow);
+}
+
+/* Stagger animation for items */
+.tool-item:nth-child(1) { animation-delay: 0.1s; }
+.tool-item:nth-child(2) { animation-delay: 0.2s; }
+.tool-item:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes slideUpFade {
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.tool-item h4 {
+    color: var(--accent-color);
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(128,128,128,0.1);
+    padding-bottom: 10px;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.tool-item h4::before {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: var(--accent-gradient);
+    border-radius: 50%;
+}
+
+.tool-input-group {
+    margin-bottom: 15px;
+}
+
+.tool-input-group label {
+    display: block;
+    color: var(--secondary-text);
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.tool-input-group input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 2px solid transparent;
+    background: rgba(128,128,128,0.05);
+    color: var(--display-color);
+    outline: none;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.tool-input-group input:focus {
+    background: var(--calc-bg);
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.1);
+}
+
+.tool-actions button {
+    width: 100%;
+    margin-top: 10px;
+    background: var(--accent-gradient);
+    color: white;
+    padding: 12px;
+    border-radius: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+}
+
+.tool-actions button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
+}
+
+.tool-actions button:active {
+    transform: translateY(1px);
+}
+
+.tool-result {
+    margin-top: 20px;
+    padding: 15px;
+    background: rgba(128,128,128,0.05);
+    border-radius: 12px;
+    font-weight: 600;
+    color: var(--display-color);
+    text-align: center;
+    min-height: 0;
+    opacity: 0;
+    transform: scale(0.95);
+    transition: all 0.3s ease;
+    border-left: 4px solid var(--accent-color);
+}
+
+.tool-result.show {
+    opacity: 1;
+    transform: scale(1);
+    min-height: 20px;
+}
+
+/* Display Container adjustments */
+.display-container {
+    padding: 10px 20px; /* Reduced padding */
+    text-align: right;
+    flex-grow: 0; /* Don't take up unnecessary space, let keypad grow */
+    flex-shrink: 0; /* Don't shrink too much */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    word-break: break-all;
+    min-height: 100px; /* Minimum reasonable height */
+}
+
+.previous-operand {
+    font-size: 1rem; /* Slightly smaller */
+    color: var(--secondary-text);
+    min-height: 1.2rem;
+    margin-bottom: 2px;
+}
+
+.current-operand {
+    font-size: 2.5rem; /* More compact */
+    color: var(--display-color);
+    font-weight: 300;
+    transition: font-size 0.2s;
+    line-height: 1.1;
+}
+
+/* Dynamic font sizing could be done in JS, but simpler here */
+.current-operand.long {
+    font-size: 1.8rem;
+}
+
+/* Mobile First Standard Keys Grid */
+.standard-keys {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    /* On mobile, this is direct child of .keypad (if wrapped). */
+    /* Since we wrapped it, we need to make sure .keypad handles it. */
+    /* Mobile .keypad style: */
+}
+
+.keypad {
+    /* Mobile default */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end; /* Push buttons to the bottom */
+    gap: 12px;
+    padding: 20px;
+    padding-bottom: max(20px, env(safe-area-inset-bottom)); /* Handle Safe Area */
+    background-color: var(--calc-bg);
+    border-top-left-radius: 30px;
+    border-top-right-radius: 30px;
+    box-shadow: 0 -5px 20px rgba(0,0,0,0.05);
+    flex-grow: 1; /* Keypad takes remaining space */
+    min-height: 0; /* Crucial for flex containers to shrink */
+    overflow-y: auto; /* Allow scrolling if screen is too small */
+}
+
+/* Adjust Desktop Keypad */
+@media (min-width: 768px) {
+    .keypad {
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 20px;
+        padding: 30px;
+        height: 100%;
+        border-radius: 0;
+        box-shadow: none;
+        align-content: stretch;
+    }
+
+    .scientific-keys {
+        grid-column: 1;
+        display: grid !important; /* Force Show */
+        grid-template-columns: repeat(3, 1fr); /* 3 cols for sci keys on desktop */
+        gap: 12px;
+        border: none;
+        padding: 0;
+        margin: 0;
+        align-content: center;
+    }
+
+    .standard-keys {
+        grid-column: 2;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        align-content: center;
+    }
+
+    /* Make buttons bigger on desktop */
+    .btn {
+        padding: 20px;
+        font-size: 1.3rem;
+        height: 100%;
+    }
+}
+
+/* Adjustments for Short Screens (Landscape Mobiles / Smart Displays like Nest Hub) */
+@media (max-height: 700px) {
+    .calculator {
+        height: 100vh;
+        margin: 0;
+        border-radius: 0;
+        max-width: 100vw;
+    }
+
+    .header {
+        padding: 5px 15px; /* Even tighter header */
+    }
+
+    .display-container {
+        padding: 5px 20px;
+        min-height: 60px; /* Reduced min-height */
+    }
+
+    .current-operand {
+        font-size: 1.8rem;
+    }
+
+    .keypad {
+        padding: 8px;
+        gap: 6px;
+    }
+
+    .btn {
+        padding: 8px; /* Smaller padding */
+        font-size: 0.9rem;
+        border-radius: 10px;
+    }
+    
+    /* Ensure desktop grid works on short screens too */
+    @media (min-width: 768px) {
+        .calculator {
+             height: 100vh;
+             max-height: none;
+             border: none;
+        }
+        
+        .keypad {
+            padding: 15px;
+            gap: 15px;
+        }
+        
+        .scientific-keys, .standard-keys {
+            gap: 10px;
+        }
+
+        .btn {
+            font-size: 1.1rem;
+        }
+    }
+}
+
+.btn {
+    border: none;
+    outline: none;
+    background-color: var(--btn-bg);
+    color: var(--btn-text);
+    font-size: 1.2rem;
+    padding: 15px;
+    border-radius: 16px;
+    cursor: pointer;
+    box-shadow: var(--btn-shadow);
+    transition: transform 0.1s, box-shadow 0.1s, background-color 0.2s;
+    user-select: none;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn:active {
+    transform: scale(0.95);
+    box-shadow: var(--btn-active-shadow);
+}
+
+/* Function keys */
+.fn {
+    background-color: var(--fn-bg);
+    color: var(--fn-text);
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+/* Operation keys */
+.op {
+    background: var(--op-gradient);
+    color: white; /* Often better contrast */
+    font-size: 1.4rem;
+}
+
+.clear, .delete {
+    color: #ff6b6b;
+    font-weight: 600;
+}
+
+/* Number keys */
+.num {
+    font-weight: 400;
+}
+
+/* 2nd button active state */
+.btn[data-action="2nd"].active {
+    background: var(--accent-gradient);
+    color: white;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Zero button spans 2 columns */
+.btn[data-value="0"] {
+    grid-column: span 2;
+}
+
+/* Equals button */
+.equals {
+    background: var(--equals-gradient);
+    color: white;
+    font-size: 1.5rem;
+}
+
+/* History Panel */
+.history-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--calc-bg);
+    z-index: 10;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease-in-out;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.history-panel.open {
+    transform: translateX(0);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    color: var(--display-color);
+}
+
+.history-list {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.history-item {
+    padding: 10px;
+    border-bottom: 1px solid rgba(128,128,128,0.1);
+    cursor: pointer;
+}
+
+.history-item:hover {
+    background-color: rgba(128,128,128,0.05);
+}
+
+.history-expression {
+    color: var(--secondary-text);
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.history-result {
+    color: var(--display-color);
+    font-size: 1.2rem;
+    font-weight: 600;
+    text-align: right;
+}
+
+.text-btn {
+    background: none;
+    border: none;
+    color: var(--accent-color);
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+/* Mobile specific tweaks */
+@media (max-width: 380px) {
+    .btn {
+        padding: 12px;
+        font-size: 1rem;
+    }
+    .current-operand {
+        font-size: 2.5rem;
+    }
+}

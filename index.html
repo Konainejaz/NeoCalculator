@@ -1,10 +1,157 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta http-equiv="refresh" content="0; url=calculator.html">
-    <title>NeoCalc - Redirecting...</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calculator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <p>Redirecting to NeoCalc...</p>
+    <div class="calculator">
+        <div class="main-layout">
+            <div class="header">
+                <div class="brand-container">
+                    <div class="brand">Calculator</div>
+                    <div class="developer">by Quonain Ejaz</div>
+                </div>
+                <div class="actions">
+                     <button id="sci-toggle" class="icon-btn text-icon-btn" aria-label="Scientific Mode">Sci</button>
+                     <button id="history-toggle" class="icon-btn" aria-label="History"><i class="fas fa-history"></i></button>
+                     <button id="theme-toggle" class="icon-btn" aria-label="Toggle Theme"><i class="fas fa-moon"></i></button>
+                </div>
+            </div>
+            
+            <div class="display-container">
+                <div class="previous-operand" id="previous-operand"></div>
+                <div class="current-operand" id="current-operand">0</div>
+            </div>
+
+            <div class="keypad">
+                <div class="scientific-keys" id="scientific-keys">
+                    <!-- Row 0: Extra Scientific -->
+                    <button class="btn fn" data-action="tools" style="background: var(--accent-gradient); color: white; font-weight: bold;">Tools</button>
+                    <button class="btn fn" data-action="2nd" id="btn-2nd">2nd</button>
+                    <button class="btn fn" data-action="factorial">x!</button>
+                    <button class="btn fn" data-action="inv">1/x</button>
+                    
+                    <!-- Row 1: Trig -->
+                    <button class="btn fn" data-action="sin" data-alt="asin">sin</button>
+                    <button class="btn fn" data-action="cos" data-alt="acos">cos</button>
+                    <button class="btn fn" data-action="tan" data-alt="atan">tan</button>
+                    <button class="btn fn" data-action="deg-rad" id="deg-rad">DEG</button>
+    
+                    <!-- Row 2 -->
+                    <button class="btn fn" data-action="log" data-alt="pow10">log</button>
+                    <button class="btn fn" data-action="ln" data-alt="exp">ln</button>
+                    <button class="btn fn" data-action="(">(</button>
+                    <button class="btn fn" data-action=")">)</button>
+    
+                    <!-- Row 3 -->
+                    <button class="btn fn" data-action="sqrt" data-alt="sqr">√</button>
+                    <button class="btn fn" data-action="pow">^</button>
+                    <button class="btn fn" data-action="pi">π</button>
+                    <button class="btn fn" data-action="abs">|x|</button>
+                </div>
+    
+                <!-- Standard Grid Starts Here -->
+                <div class="standard-keys">
+                    <button class="btn clear" data-action="clear">AC</button>
+                    <button class="btn delete" data-action="delete"><i class="fas fa-backspace"></i></button>
+                    <button class="btn op" data-action="%">%</button>
+                    <button class="btn op" data-action="/">÷</button>
+        
+                    <button class="btn num" data-value="7">7</button>
+                    <button class="btn num" data-value="8">8</button>
+                    <button class="btn num" data-value="9">9</button>
+                    <button class="btn op" data-action="*">×</button>
+        
+                    <button class="btn num" data-value="4">4</button>
+                    <button class="btn num" data-value="5">5</button>
+                    <button class="btn num" data-value="6">6</button>
+                    <button class="btn op" data-action="-">−</button>
+        
+                    <button class="btn num" data-value="1">1</button>
+                    <button class="btn num" data-value="2">2</button>
+                    <button class="btn num" data-value="3">3</button>
+                    <button class="btn op" data-action="+">+</button>
+        
+                    <button class="btn num" data-value="0">0</button>
+                    <button class="btn num" data-value=".">.</button>
+                    <button class="btn equals" data-action="calculate">=</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="history-panel" id="history-panel">
+            <div class="history-header">
+                <button id="close-history" class="icon-btn" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
+                <h3>History</h3>
+                <button id="clear-history" class="text-btn">Clear</button>
+            </div>
+            <div class="history-list" id="history-list">
+                <!-- History items will be added here -->
+            </div>
+        </div>
+
+        <div class="history-panel" id="tools-panel">
+            <div class="history-header">
+                <button id="close-tools" class="icon-btn" aria-label="Back"><i class="fas fa-arrow-left"></i></button>
+                <h3>Tools</h3>
+                <div></div>
+            </div>
+            <div class="tools-list">
+                <div class="tool-item">
+                    <h4>Circle Solver</h4>
+                    <div class="tool-input-group">
+                        <label>Radius (r)</label>
+                        <input type="number" id="circle-r" placeholder="Enter radius">
+                    </div>
+                    <div class="tool-actions">
+                        <button class="btn fn" onclick="solveCircle()">Calculate</button>
+                    </div>
+                    <div class="tool-result" id="circle-result"></div>
+                </div>
+
+                <div class="tool-item">
+                    <h4>Pythagoras</h4>
+                    <div class="tool-input-group">
+                        <label>Side A</label>
+                        <input type="number" id="pyth-a" placeholder="a">
+                    </div>
+                    <div class="tool-input-group">
+                        <label>Side B</label>
+                        <input type="number" id="pyth-b" placeholder="b">
+                    </div>
+                    <div class="tool-actions">
+                        <button class="btn fn" onclick="solvePythagoras()">Calculate Hypotenuse</button>
+                    </div>
+                    <div class="tool-result" id="pyth-result"></div>
+                </div>
+
+                <div class="tool-item">
+                    <h4>Linear Algebra (ax + b = c)</h4>
+                    <div class="tool-input-group">
+                        <label>a</label>
+                        <input type="number" id="alg-a" placeholder="Coeff x">
+                    </div>
+                    <div class="tool-input-group">
+                        <label>b</label>
+                        <input type="number" id="alg-b" placeholder="Constant">
+                    </div>
+                    <div class="tool-input-group">
+                        <label>c</label>
+                        <input type="number" id="alg-c" placeholder="Result">
+                    </div>
+                    <div class="tool-actions">
+                        <button class="btn fn" onclick="solveAlgebra()">Find X</button>
+                    </div>
+                    <div class="tool-result" id="alg-result"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
 </body>
-</html> 
+</html>
